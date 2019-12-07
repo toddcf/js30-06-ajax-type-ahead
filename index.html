@@ -15,61 +15,62 @@
     </ul>
   </form>
 <script>
+
+  const searcher = {
+    // Array of cities:
+    endpoint: 'https://gist.githubusercontent.com/Miserlou/c5cd8364bf9b2420bb29/raw/2bf258763cdddd704f8ffd3ea9a3e81d25e2c6f6/cities.json',
+    cities: [],
+    searchInput: document.querySelector('.search'),
+    suggestions: document.querySelector('.suggestions'),
+    // Filter search results while user is typing.
+    // Takes in the word that was typed, and the "cities" data that it's going to filter.
+    findMatches: (wordToMatch, cities) => {
+      // "place" is the individual item in the array:
+      return searcher.cities.filter(place => {
+        // Create regex version of wordToMatch and also pass in any of the regex flags you want (g, i, etc.):
+        const regex = new RegExp(wordToMatch, 'gi');
+        // Match either the city or state to wordToMatch:
+        return place.city.match(regex) || place.state.match(regex);
+      });
+    },
+    // Whenever user changes the value in the input:
+    displayMatches: () => {
+      const matchArray = searcher.findMatches(searcher.searchInput.value, searcher.cities);
+      const html = matchArray.map(place => {
+        // Create the highlighting effect for the city and state matches:
+        const regex = new RegExp(searcher.searchInput.value, 'gi');
+        const cityName = place.city.replace(regex, `<span class="highlight">${searcher.searchInput.value}</span>`);
+        const stateName = place.state.replace(regex, `<span class="highlight">${searcher.searchInput.value}</span>`);
+        // Format the search results into HTML:
+        return `
+          <li>
+            <span class="name">${cityName}, ${stateName}</span>
+            <span class="population">${searcher.populationCommas(place.population)}</span>
+          </li>
+        `;
+      }).join(''); // Use join to convert from an array to a string.
+      // Insert the results into the .suggestions element:
+      searcher.suggestions.innerHTML = html;
+    },
+    // Add commas to population:
+    populationCommas: (x) => {
+      return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    },
+    init: () => {
+      // fetch the data...
+      // ...which returns a promise in the form of a raw "blob" of data that needs to be converted into JSON...
+      // ... which returns raw data...
+      // ...which can be "spread" into individual arguments so that they can be pushed into the cities array.
+      fetch(searcher.endpoint)
+        .then(blob => blob.json())
+        .then(data => searcher.cities.push(...data));
+      // As the user types, run displayMatches:
+      searcher.searchInput.addEventListener('change', searcher.displayMatches);
+      searcher.searchInput.addEventListener('keyup', searcher.displayMatches);
+    }
+  }
   
-  // Array of cities
-  const endpoint = 'https://gist.githubusercontent.com/Miserlou/c5cd8364bf9b2420bb29/raw/2bf258763cdddd704f8ffd3ea9a3e81d25e2c6f6/cities.json';
-  const cities = [];
-  const searchInput = document.querySelector('.search');
-  const suggestions = document.querySelector('.suggestions');
-
-  // fetch the data...
-  // ...which returns a promise in the form of a raw "blob" of data that needs to be converted into JSON...
-  // ... which returns raw data...
-  // ...which can be "spread" into individual arguments so that they can be pushed into the cities array.
-  fetch(endpoint)
-    .then(blob => blob.json())
-    .then(data => cities.push(...data));
-
-  // Filter search results while user is typing.
-  // Takes in the word that was typed, and the "cities" data that it's going to filter.
-  function findMatches(wordToMatch, cities) {
-    // "place" is the individual item in the array:
-    return cities.filter(place => {
-      // Create regex version of wordToMatch and also pass in any of the regex flags you want (g, i, etc.):
-      const regex = new RegExp(wordToMatch, 'gi');
-      // Match either the city or state to wordToMatch:
-      return place.city.match(regex) || place.state.match(regex);
-    });
-  }
-
-  // Whenever user changes the value in the input:
-  function displayMatches() {
-    const matchArray = findMatches(this.value, cities);
-    const html = matchArray.map(place => {
-      // Create the highlighting effect for the city and state matches:
-      const regex = new RegExp(this.value, 'gi');
-      const cityName = place.city.replace(regex, `<span class="highlight">${this.value}</span>`);
-      const stateName = place.state.replace(regex, `<span class="highlight">${this.value}</span>`);
-      // Format the search results into HTML:
-      return `
-        <li>
-          <span class="name">${cityName}, ${stateName}</span>
-          <span class="population">${populationCommas(place.population)}</span>
-        </li>
-      `;
-    }).join(''); // Use join to convert from an array to a string.
-    // Insert the results into the .suggestions element:
-    suggestions.innerHTML = html;
-  }
-
-  // Add commas to population:
-  function populationCommas(x) {
-    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  }
-
-  // As the user types, run displayMatches:
-  searchInput.addEventListener('change', displayMatches);
-  searchInput.addEventListener('keyup', displayMatches);
+  searcher.init();  
 
 </script>
 </body>
